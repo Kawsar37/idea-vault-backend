@@ -5,7 +5,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 dotenv.config();
 
@@ -36,9 +36,31 @@ async function run() {
       res.json(result);
     });
 
+    app.get("/home-ideas", async (req, res) => {
+      const result = await ideaCollection
+        .aggregate([
+          {
+            $limit: 6,
+          },
+        ])
+        .toArray();
+      res.send(result);
+    });
+
+    app.get("/idea/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await ideaCollection
+        .aggregate([
+          {
+            $match: { _id: new ObjectId(id) },
+          },
+        ])
+        .toArray();
+      res.send(result);
+    });
+
     app.post("/idea", async (req, res) => {
       const ideaData = req.body;
-      console.log(ideaData);
       const result = await ideaCollection.insertOne(ideaData);
 
       res.json(result);
