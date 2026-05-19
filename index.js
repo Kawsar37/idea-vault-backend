@@ -30,6 +30,7 @@ async function run() {
     await client.connect();
     const db = await client.db("idea-vault");
     const ideaCollection = db.collection("ideas");
+    const commentCollection = db.collection("comment");
 
     app.get("/ideas", async (req, res) => {
       const result = await ideaCollection.find().toArray();
@@ -44,11 +45,17 @@ async function run() {
           },
         ])
         .toArray();
-      res.send(result);
+      res.json(result);
+    });
+
+    app.get("/ideas/:userId", async (req, res) => {
+      const { userId } = await req.params;
+      const result = await ideaCollection.find({ userId: userId }).toArray();
+      res.json(result);
     });
 
     app.get("/idea/:id", async (req, res) => {
-      const { id } = req.params;
+      const { id } = await req.params;
       const result = await ideaCollection
         .aggregate([
           {
@@ -56,13 +63,40 @@ async function run() {
           },
         ])
         .toArray();
-      res.send(result);
+      res.json(result);
+    });
+
+    app.delete("/ideas/:id", async (req, res) => {
+      const { id } = await req.params;
+      const result = await ideaCollection.deleteOne({ _id: new ObjectId(id) });
+
+      res.json(result);
     });
 
     app.post("/idea", async (req, res) => {
       const ideaData = req.body;
       const result = await ideaCollection.insertOne(ideaData);
 
+      res.json(result);
+    });
+
+    app.post("/comment", async (req, res) => {
+      const commentData = req.body;
+      const result = await commentCollection.insertOne(commentData);
+
+      res.json(result);
+    });
+
+    app.delete("comment/:commentId", async (req, res) => {
+      const { commentId } = await req.params;
+      const result = await commentCollection.deleteOne({
+        _id: new ObjectId(commentId),
+      });
+    });
+
+    app.get("/comment/:ideaId", async (req, res) => {
+      const { ideaId } = await req.params;
+      const result = await commentCollection.find({ ideaId: ideaId }).toArray();
       res.json(result);
     });
 
