@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 
 dotenv.config();
 
@@ -24,6 +25,28 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+);
+
+const verifyToken = async (req, res, next) => {
+  const header = req?.headers?.authorization;
+  if (!header) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const token = header.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    next();
+  } catch (error) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+};
 
 async function run() {
   try {
@@ -48,13 +71,13 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/ideas/:userId", async (req, res) => {
+    app.get("/ideas/:userId", verifyToken, async (req, res) => {
       const { userId } = await req.params;
       const result = await ideaCollection.find({ userId: userId }).toArray();
       res.json(result);
     });
 
-    app.get("/idea/:id", async (req, res) => {
+    app.get("/idea/:id", verifyToken, async (req, res) => {
       const { id } = await req.params;
       const result = await ideaCollection
         .aggregate([
@@ -66,13 +89,12 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/idea-search/:query", async (req, res) => {
+    app.get("/idea-search{/:query}", async (req, res) => {
       const { query } = await req.params;
-      console.log(query);
       const result = await ideaCollection
         .find({
           title: {
-            $regex: query,
+            $regex: query || "",
             $options: "i",
           },
         })
@@ -87,7 +109,6 @@ async function run() {
           category: category,
         })
         .toArray();
-      console.log(category, result);
       res.json(result);
     });
 
@@ -98,7 +119,7 @@ async function run() {
       res.json(result);
     });
 
-    app.post("/idea", async (req, res) => {
+    app.post("/idea", verifyToken, async (req, res) => {
       const ideaData = req.body;
       const result = await ideaCollection.insertOne(ideaData);
 
@@ -148,7 +169,7 @@ async function run() {
       res.json(result);
     });
 
-    app.get("/my-comment/:userId", async (req, res) => {
+    app.get("/my-comment/:userId", verifyToken, async (req, res) => {
       const { userId } = await req.params;
       const result = await commentCollection.find({ userId: userId }).toArray();
       res.json(result);
