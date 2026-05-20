@@ -15,7 +15,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-PORT = 5000;
+PORT = process.env.PORT;
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -63,6 +63,31 @@ async function run() {
           },
         ])
         .toArray();
+      res.json(result);
+    });
+
+    app.get("/idea-search/:query", async (req, res) => {
+      const { query } = await req.params;
+      console.log(query);
+      const result = await ideaCollection
+        .find({
+          title: {
+            $regex: query,
+            $options: "i",
+          },
+        })
+        .toArray();
+      res.json(result);
+    });
+
+    app.get("/idea-category/:category", async (req, res) => {
+      const { category } = await req.params;
+      const result = await ideaCollection
+        .find({
+          category: category,
+        })
+        .toArray();
+      console.log(category, result);
       res.json(result);
     });
 
@@ -146,7 +171,7 @@ async function run() {
 run().catch(console.dir);
 
 app.listen(PORT, () => {
-  console.log("server running on port 8000");
+  console.log("server running on port", PORT);
 });
 
 app.get("/", (req, res) => {
