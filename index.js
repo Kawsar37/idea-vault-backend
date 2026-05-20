@@ -87,11 +87,46 @@ async function run() {
       res.json(result);
     });
 
-    app.delete("comment/:commentId", async (req, res) => {
+    app.delete("/comment/:commentId", async (req, res) => {
       const { commentId } = await req.params;
       const result = await commentCollection.deleteOne({
         _id: new ObjectId(commentId),
       });
+      res.json(result);
+    });
+
+    app.patch("/comment/:commentId", async (req, res) => {
+      const { commentId } = await req.params;
+      const updatedData = await req.body;
+      const result = await commentCollection.updateOne(
+        {
+          _id: new ObjectId(commentId),
+        },
+        {
+          $set: updatedData,
+        },
+      );
+      res.json(result);
+    });
+
+    app.patch("/idea/:ideaId", async (req, res) => {
+      const { ideaId } = await req.params;
+      const updatedData = await req.body;
+      const result = await ideaCollection.updateOne(
+        {
+          _id: new ObjectId(ideaId),
+        },
+        {
+          $set: updatedData,
+        },
+      );
+      res.json(result);
+    });
+
+    app.get("/my-comment/:userId", async (req, res) => {
+      const { userId } = await req.params;
+      const result = await commentCollection.find({ userId: userId }).toArray();
+      res.json(result);
     });
 
     app.get("/comment/:ideaId", async (req, res) => {
