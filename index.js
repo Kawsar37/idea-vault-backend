@@ -50,7 +50,7 @@ const verifyToken = async (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const db = await client.db("idea-vault");
     const ideaCollection = db.collection("ideas");
     const commentCollection = db.collection("comment");
